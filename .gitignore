@@ -1,0 +1,22 @@
+# Python virtual environment
+venv/
+.venv/
+
+# Pygame/Python bytecode
+__pycache__/
+*.pyc
+
+# Local data models (large Whisper/Piper models)
+data/whisper_models/
+data/piper_voices/
+
+# Temporary audio files
+data/*.wav
+data/temp_voice.wav
+data/temp_tts_out.wav
+temp_voice.wav
+temp_tts_out.wav
+
+# OS generated files
+.DS_Store
+Thumbs.db

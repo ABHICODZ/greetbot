@@ -1,0 +1,44 @@
+{
+  "college": {
+    "name": "Geethanjali College of Engineering and Technology",
+    "director": {
+      "name": "Dr. Udaya Kumar Susarla",
+      "description": "A distinguished academician with extensive experience in engineering education across India, New Zealand, Ethiopia, and Morocco, and former Principal of the college."
+    },
+    "chairman": {
+      "name": "Mr. G. R. Ravinder Reddy",
+      "description": "Secretary of the Geethanjali Group of Institutions, an alumnus of NIT Warangal in Civil Engineering, and a former Superintendent of Police."
+    },
+    "vice_chairman": {
+      "name": "Mr. G. Harishchandra Reddy",
+      "description": "Vice Chairman of the Geethanjali Group of Institutions who actively oversees the administration, operational management, and development of the campus."
+    },
+    "hod": {
+      "name": "Dr. E. Ravindra",
+      "department": "Computer Science and Engineering",
+      "description": "Head of the Computer Science and Engineering department, coordinating academic curricula, faculty development, and student placement initiatives."
+    }
+  },
+  "club": {
+    "name": "GCET Robotics Club",
+    "description": "A prominent hub for automation, robotics, and AI at GCET. The club operates out of a dedicated Robotics Lab, facilitates projects ranging from drones to autonomous bots, and hosts ROBOTICA, a major national tech festival.",
+    "faculty_coordinator": "Dr. E. Ravindra",
+    "student_lead": "Robotics Club Representative"
+  },
+  "placements": {
+    "2024": {
+      "summary": "An excellent placement season securing high percentage recruitments across engineering streams.",
+      "highest_package_lpa": "44.0",
+      "average_package_lpa": "6.0",
+      "students_placed": "850",
+      "top_recruiters": ["Amazon", "TCS", "Infosys", "Capgemini", "Wipro", "IBM", "Cognizant", "Genpact"]
+    },
+    "2025": {
+      "summary": "A highly competitive placement season with a large volume of multi-industry employment offers.",
+      "highest_package_lpa": "41.0",
+      "average_package_lpa": "5.0",
+      "students_placed": "1433",
+      "top_recruiters": ["Internz Valley", "KI Tech Ltd", "Savanties", "TCS", "Cognizant", "Infosys"]
+    }
+  }
+}
