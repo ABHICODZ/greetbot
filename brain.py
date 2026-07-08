@@ -197,6 +197,12 @@ def try_kb_answer(user_input, kb):
                 return f"Our {label}{dept} is {role['name']}.{desc}".strip()
 
     club = kb.get("club", {})
+    if any(k in text for k in ["convenor", "convenors", "coordinator", "coordinators", "lead", "head", "in charge"]) and "club" in text:
+        if any(k in text for k in ["faculty", "teacher", "professor", "convenor", "coordinator", "in charge"]) and club.get("faculty_coordinator"):
+            return f"The faculty coordinator and convenor of the {club.get('name', 'club')} is {club['faculty_coordinator']}."
+        if any(k in text for k in ["student", "lead", "head"]) and club.get("student_lead"):
+            return f"The student lead of the {club.get('name', 'club')} is {club['student_lead']}."
+
     if "club" in text and club.get("name"):
         desc = f" {club.get('description', '')}" if club.get("description") else ""
         return f"Our club is {club['name']}.{desc}".strip()

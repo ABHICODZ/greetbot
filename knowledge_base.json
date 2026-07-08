@@ -22,7 +22,7 @@
   "club": {
     "name": "GCET Robotics Club",
     "description": "A prominent hub for automation, robotics, and AI at GCET. The club operates out of a dedicated Robotics Lab, facilitates projects ranging from drones to autonomous bots, and hosts ROBOTICA, a major national tech festival.",
-    "faculty_coordinator": "Dr. E. Ravindra",
+    "faculty_coordinator": "Dr. G. Praveen (Convenor)",
     "student_lead": "Robotics Club Representative"
   },
   "placements": {
@@ -39,6 +39,13 @@
       "average_package_lpa": "5.0",
       "students_placed": "1433",
       "top_recruiters": ["Internz Valley", "KI Tech Ltd", "Savanties", "TCS", "Cognizant", "Infosys"]
+    },
+    "2026": {
+      "summary": "A landmark placement season featuring record-high packages and top-tier product company offers.",
+      "highest_package_lpa": "51.0",
+      "average_package_lpa": "6.0",
+      "students_placed": "Ongoing",
+      "top_recruiters": ["ServiceNow", "Booking Holdings", "Autodesk", "Catalog", "Zeta Tech Ltd", "Real Page"]
     }
   }
 }
