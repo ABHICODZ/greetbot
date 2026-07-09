@@ -295,6 +295,37 @@ def _update_blink_clock():
 def _is_blinking():
     return pygame.time.get_ticks() < _blink_state["blinking_until"]
 
+_emotion_transition = {"current": "NEUTRAL", "previous": "NEUTRAL", "start": 0, "duration": 250}
+
+def _update_emotion_transition():
+    now = pygame.time.get_ticks()
+    target = BOT_STATE["emotion"]
+    if target != _emotion_transition["current"]:
+        _emotion_transition["previous"] = _emotion_transition["current"]
+        _emotion_transition["current"] = target
+        _emotion_transition["start"] = now
+
+def _get_transition_progress():
+    elapsed = pygame.time.get_ticks() - _emotion_transition["start"]
+    return min(1.0, elapsed / _emotion_transition["duration"])
+
+def get_blended_eye_surface(side):
+    progress = _get_transition_progress()
+    to_emotion = _emotion_transition["current"]
+    from_emotion = _emotion_transition["previous"]
+
+    if progress >= 1.0 or from_emotion == to_emotion:
+        return get_high_res_eye_surface(to_emotion, side)
+
+    from_surf = get_high_res_eye_surface(from_emotion, side)
+    to_surf = get_high_res_eye_surface(to_emotion, side)
+
+    blended = pygame.Surface((160, 140), pygame.SRCALPHA)
+    from_surf.set_alpha(int((1.0 - progress) * 255))
+    to_surf.set_alpha(int(progress * 255))
+    blended.blit(from_surf, (0, 0))
+    blended.blit(to_surf, (0, 0))
+    return blended
 
 def get_high_res_eye_surface(emotion, side):
     """
@@ -475,10 +506,18 @@ def draw_led_grid(dest_screen, src_surf, cx, cy, grid_spacing=4):
                 pygame.draw.circle(dest_screen, core_color, (px, py), grid_spacing * 0.38)
 
 
-def draw_glowing_mouth(screen, cx, cy, emotion):
+def draw_glowing_mouth(screen, cx, cy, emotion, talking=False):
     color = (130, 240, 255)
     glow_color = (0, 80, 180)
 
+    if talking:
+        wobble = abs(np.sin(pygame.time.get_ticks() / 90.0))
+        mouth_h = int(6 + wobble * 22)
+        rect = pygame.Rect(cx - 26, cy - mouth_h // 2, 52, mouth_h)
+        pygame.draw.ellipse(screen, glow_color, rect, 8)
+        pygame.draw.ellipse(screen, color, rect, 4)
+        return
+    
     if emotion == "HAPPY":
         rect = pygame.Rect(cx - 30, cy - 10, 60, 30)
         pygame.draw.arc(screen, glow_color, rect, 3.5, 5.9, 8)
@@ -510,19 +549,20 @@ def draw_interface():
     draw_visor_scanlines(screen, 800, 370)
 
     _update_blink_clock()
-    emotion = BOT_STATE["emotion"]
+    _update_emotion_transition()
+    emotion = _emotion_transition["current"]
 
     left_eye_center = (250, 160)
     right_eye_center = (550, 160)
     mouth_center = (400, 255)
 
-    left_eye_surf = get_high_res_eye_surface(emotion, side=-1)
-    right_eye_surf = get_high_res_eye_surface(emotion, side=1)
+    left_eye_surf = get_blended_eye_surface(side=-1)
+    right_eye_surf = get_blended_eye_surface(side=1)
 
     draw_led_grid(screen, left_eye_surf, left_eye_center[0], left_eye_center[1], grid_spacing=4)
     draw_led_grid(screen, right_eye_surf, right_eye_center[0], right_eye_center[1], grid_spacing=4)
 
-    draw_glowing_mouth(screen, mouth_center[0], mouth_center[1], emotion)
+    draw_glowing_mouth(screen, mouth_center[0], mouth_center[1], emotion, talking=is_speaking)
 
     # Bottom UI dashboard
     pygame.draw.rect(screen, (16, 20, 35), (0, 370, 800, 110))
