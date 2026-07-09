@@ -145,6 +145,24 @@ def get_input_sentiment(user_input):
         return "SURPRISED"
     return "NEUTRAL"
 
+def get_response_emotion(response_text):
+    """
+    Analyzes the BOT's own reply so the face matches what it's actually
+    saying, not just the tone of the question it was asked.
+    """
+    text = response_text.lower()
+
+    sad_markers = ["sorry", "unfortunately", "trouble", "couldn't", "cannot", "can't", "problem", "error", "apolog"]
+    happy_markers = ["great", "awesome", "glad", "happy", "excited", "wonderful", "congrat", "amazing", "excellent"]
+    surprised_markers = ["wow", "whoa", "really", "surprising", "unexpected"]
+
+    if any(m in text for m in sad_markers):
+        return "SAD"
+    if "!" in text or any(m in text for m in happy_markers):
+        return "HAPPY"
+    if "?" in text or any(m in text for m in surprised_markers):
+        return "SURPRISED"
+    return "NEUTRAL"
 
 # ---------------------------------------------------------------
 # Direct-answer shortcuts: things a 360M local model will get wrong
@@ -240,18 +258,17 @@ def query_ollama(user_input):
     """
     direct = try_direct_answer(user_input)
     if direct:
-        return direct, get_input_sentiment(user_input)
+        return direct, get_response_emotion(direct)
 
     kb = load_knowledge_base()
 
     kb_answer = try_kb_answer(user_input, kb)
     if kb_answer:
-        return kb_answer, get_input_sentiment(user_input)
+        return kb_answer, get_response_emotion(kb_answer)
 
     core_facts = build_core_facts(kb)
     context = build_context(user_input, kb)
     today_str = datetime.datetime.now().strftime("%A, %B %d, %Y")
-    sentiment = get_input_sentiment(user_input)
 
     system_prompt = (
         f"Your name is strictly {CONFIG['BOT_NAME']}. You are a friendly interactive robot assistant. "
@@ -281,7 +298,7 @@ def query_ollama(user_input):
             res.raise_for_status()
             data = res.json()
             reply = data["message"]["content"].strip()
-            return reply, sentiment
+            return reply, get_response_emotion(reply)
         except Exception as e:
             print(f"\n[BRAIN FAULT]: Local Ollama error - {e}")
             return "Sorry, I had trouble reaching my local thinking engine.", "SAD"
@@ -311,7 +328,7 @@ def query_ollama(user_input):
             res.raise_for_status()
             data = res.json()
             reply = data["choices"][0]["message"]["content"].strip()
-            return reply, sentiment
+            return reply, get_response_emotion(reply)
         except requests.exceptions.HTTPError as e:
             print(f"\n[BRAIN FAULT]: Groq HTTP error - {e} - {res.text if 'res' in dir() else ''}")
             return "Sorry, I had trouble reaching my thinking engine.", "SAD"
