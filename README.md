@@ -1,78 +1,118 @@
 # GreetBot 🤖
 
 <p align="center">
-  <img src="images/greetbot_hardware.jpg" width="31%" alt="GreetBot Hardware Render" />
-  <img src="images/greetbot_visor.jpg" width="31%" alt="GreetBot EVE Visor Screen" />
-  <img src="images/eve_bot.png" width="31%" alt="Eve Bot Concept" />
+  <img src="images/greetbot_hardware.jpg" width="31%" alt="GreetBot Hardware Render" style="border-radius: 8px;" />
+  <img src="images/greetbot_visor.jpg" width="31%" alt="GreetBot EVE Visor Screen" style="border-radius: 8px;" />
+  <img src="images/eve_bot.png" width="31%" alt="Eve Bot Concept" style="border-radius: 8px;" />
 </p>
 
-An interactive, hands-free companion robot featuring a glowing **EVE-style (Wall-E) animated LED anime face** rendered in Pygame, voice activity detection (VAD), local faster-whisper speech-to-text, and a dual-backend reasoning brain (Groq Cloud / Local Ollama).
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/Pygame-2.5+-green.svg?style=for-the-badge&logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/Ollama-3B_Local-orange.svg?style=for-the-badge&logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/Platform-Raspberry_Pi_5_%7C_macOS-red.svg?style=for-the-badge&logo=raspberry-pi&logoColor=white" />
+</p>
+
+<p align="center">
+  <b>GreetBot</b> is a premium, hands-free tabletop companion robot designed for academic environments. Featuring a responsive, expressive <b>EVE-style (Wall-E) digital anime face</b>, dynamic voice activity detection (VAD), and a persistent dual-layer memory system, GreetBot delivers local offline conversations under 2-3 seconds on the Raspberry Pi 5.
+</p>
 
 ---
 
-## Key Features
+## ⚡ Core Tech Matrix
 
-*   **EVE-Style LED Anime Visor**: Dynamic Pygame interface displaying glowing cyan LED capsule eyes that animate based on 5 emotion states (`NEUTRAL`, `HAPPY`, `SAD`, `SURPRISED`, `THINKING`) with scanlines and randomized natural blinking.
-*   **Resolution-Agnostic Scaling**: Draws to a virtual $800 \times 480$ canvas and dynamically scales up (`pygame.transform.smoothscale`) to fit any physical screen size. Supports **F11** to toggle fullscreen and **ESC** to exit cleanly.
-*   **VAD-Based Audio Capture**: Energy-based Voice Activity Detection dynamically records natural speech and pauses. The default noise threshold is tuned to **1400** (optimized for room ambient noise floors of 700-1000 RMS) to prevent infinite recording loops.
-*   **Persistent User Memory**: Automatically saves a user's name and facts to `memory.json`. 
-    *   *Direct shortcuts*: Instant saving/retrieval for phrases like "my name is X", "what's my name", and "forget everything".
-    *   *LLM context injection*: Stored facts are automatically folded into the LLM system prompt context, allowing the bot to organically remember details when asked natural questions.
-*   **Three-Tier Reasoning Engine**:
-    1.  *Instant Python Shortcuts*: Real-time responses for date, time, day, bot identity, and memory commands.
-    2.  *Keyword KB Lookup*: Querying `knowledge_base.json` for factual data (college details, personnel, placement figures).
-    3.  *LLM Fallback*: Using Groq Cloud or a local 3B model (Ollama) for conversational replies.
-*   **Autostart & Pre-Warm Boot**: Boots automatically on Pi startup, pre-warms the Ollama model to RAM via a warmup call, sets screen control, and runs headless logging.
+*   **Cybernetic Visor (Pygame)**: Rendered on a virtual $800 \times 480$ canvas and scaled via `smoothscale` to fit any physical screen. Features responsive EVE-style glowing cyan capsule eyes that blink randomly and shift across 5 emotional states (`NEUTRAL`, `HAPPY`, `SAD`, `SURPRISED`, `THINKING`) using custom pixel grids and visual scanlines.
+*   **Acoustic VAD Core**: Dynamic audio recording using energy thresholds (defaults to **1400** to filter out room ambient noise).
+*   **Dual-Layer Cognitive Memory**:
+    *   *System Shortcuts*: Sub-millisecond direct regex lookup for commands ("my name is X", "what is my name", "forget everything").
+    *   *Context Injection*: Automatic memory summary integration into Ollama's system prompt for organic recall.
+*   **Pre-Warmed Ollama Pipeline**: Startup script pre-loads local LLM weights into RAM, ensuring offline replies respond in under 5 seconds.
 
 ---
 
-## File Structure
+## 🛠️ System Architecture
 
-*   `brain.py`: Shared reasoning module. Contains direct shortcuts, KB matching, memory handling, and backend dispatch.
-*   `robo_head_mac.py`: macOS entry point using CoreAudio (`sounddevice` streams) and macOS `say` fallbacks.
-*   `robo_head.py`: Raspberry Pi entry point using PipeWire (`pw-record` streams, `paplay` output) and `/dev/shm/` RAM disk.
-*   `knowledge_base.json`: Local factual database (college details, club info, placement stats).
-*   `memory.json`: Local persistent user database (name, facts).
-*   `pi_optimizer.sh`: Hardware and scheduling prioritization optimizer for Raspberry Pi.
-*   `start_greetbot.sh`: Autostart script that disables screen-blanking, warms Ollama, and launches the python loop.
-*   `api_server.py`: FastAPI server for remote/global API queries.
-
----
-
-## Configuration
-
-GreetBot is configured using environment variables:
-
-| Variable | Description | Default (Mac) | Default (Pi) |
-| :--- | :--- | :--- | :--- |
-| `BRAIN_BACKEND` | LLM backend to run (`groq` or `ollama`) | `groq` | `ollama` |
-| `GROQ_API_KEY` | Your Groq Cloud API Key | *None* | *N/A* |
-| `WHISPER_MODEL` | Size of Whisper model for STT (`tiny.en` / `base.en`) | `base.en` | `tiny.en` |
-| `VAD_SPEECH_THRESHOLD` | Sensitivity threshold of VAD | `350` | `1400` |
-
----
-
-## Setup & Running Guide
-
-### 💻 macOS (Development & Testing)
-
-1.  **Activate virtual environment & install dependencies**:
-    ```bash
-    source venv/bin/activate
-    pip install numpy pygame sounddevice requests faster-whisper
-    ```
-2.  **Run with Groq Backend**:
-    ```bash
-    export GROQ_API_KEY="your_groq_key_here"
-    export BRAIN_BACKEND="groq"
-    python3 robo_head_mac.py
-    ```
+```text
+       [ User Voice Input ]
+                │
+                ▼
+      [ VAD Audio Capture ] (pw-record / sounddevice) -> RAM (/dev/shm)
+                │
+                ▼
+     [ faster-whisper STT ] (tiny.en / base.en)
+                │
+                ▼
+         [ GreetBot Brain ] (brain.py)
+                │
+         ┌──────┴──────────────┬────────────────────────┐
+         │                     │                        │
+         ▼                     ▼                        ▼
+  [ Regex Shortcuts ]   [ KB Fact Check ]        [ LLM Dispatch ]
+  (Names, Date/Time)    (knowledge_base.json)    (Local Ollama / Groq)
+         │                     │                        │
+         └─────────────┬───────┴────────────────────────┘
+                       │
+                       ▼
+             [ Response Engine ]
+                       │
+         ┌─────────────┴─────────────┐
+         ▼                           ▼
+[ Visor Animation ]          [ Neural Speech TTS ]
+(Pygame Face Rendering)      (Piper -> paplay / espeak)
+```
 
 ---
 
-### 🍓 Raspberry Pi 5 (Local Model Target)
+## 📁 Repository Map
 
-#### 1. System Dependencies Setup
+*   📂 `brain.py` — Shared cognitive reasoning pipeline (shortcuts, database lookups, local memory, API switches).
+*   📂 `robo_head.py` — **Raspberry Pi 5 entry point** (PipeWire audio framework, memory-disk recording, dynamic visor).
+*   📂 `robo_head_mac.py` — **macOS entry point** (CoreAudio framework, Piper/system say TTS).
+*   📂 `pi_optimizer.sh` — Pi CPU governor optimizer and background process trimmer.
+*   📂 `start_greetbot.sh` — Autostart boot script with pre-warm model commands.
+*   📂 `knowledge_base.json` — Hot-reloadable factual database.
+*   📂 `memory.json` — Persistent user memory registry.
+*   📂 `api_server.py` — FastAPI global access gate.
+
+---
+
+## ⚙️ Configuration Portal
+
+Configure the system via terminal environment variables:
+
+```bash
+export BRAIN_BACKEND="ollama"      # LLM Core: "ollama" or "groq"
+export WHISPER_MODEL="tiny.en"     # Whisper Engine: "tiny.en" (Fast Pi) or "base.en" (Accurate)
+export VAD_SPEECH_THRESHOLD=1400   # Mic Threshold: Tuned for room noise floor
+export GROQ_API_KEY="gsk_..."      # Groq cloud credentials (if using cloud backup)
+```
+
+---
+
+## 🚀 Installation & Launch Guide
+
+<details>
+<summary><b>💻 macOS Setup (Development & Simulation)</b></summary>
+
+### 1. Environments & Packages
+```bash
+# Setup venv and install sounddevice/pygame drivers
+source venv/bin/activate
+pip install numpy pygame sounddevice requests faster-whisper
+```
+
+### 2. Launch
+```bash
+export GROQ_API_KEY="your_groq_key_here"
+export BRAIN_BACKEND="groq"
+python3 robo_head_mac.py
+```
+</details>
+
+<details>
+<summary><b>🍓 Raspberry Pi 5 Setup (Hardware Target)</b></summary>
+
+### 1. Install System Audio Frameworks
 ```bash
 sudo apt update
 sudo apt install pipewire-utils espeak unclutter-xfixes
@@ -81,35 +121,34 @@ source venv/bin/activate
 pip install numpy pygame requests faster-whisper
 ```
 
-#### 2. Run local Ollama in Docker & Pull the 3B model
+### 2. Run Ollama in Docker & Pull model
 ```bash
 docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
 docker exec -it ollama ollama run llama3.2:3b
 ```
 
-#### 3. Mic Routing (PipeWire)
-Since the Pi's audio devices can shift between reboots:
-1.  Find the source ID of your microphone and sink ID of your speaker:
-    ```bash
-    wpctl status
-    ```
-2.  Manually set your default mic and speaker:
-    ```bash
-    wpctl set-default <mic_source_id>
-    wpctl set-default <speaker_sink_id>
-    ```
-
-#### 4. Run System Performance Optimizer
+### 3. Dynamic Mic Routing
+Verify your active USB hardware in the PipeWire hierarchy:
 ```bash
+# List system sources/sinks
+wpctl status
+
+# Route defaults
+wpctl set-default <mic_source_id>
+wpctl set-default <speaker_sink_id>
+```
+
+### 4. Apply System Performance Boosters
+```bash
+chmod +x pi_optimizer.sh
 sudo ./pi_optimizer.sh
 ```
 
-#### 5. Autostart Setup (XDG Desktop Entry)
-To make GreetBot boot directly on startup on the Raspberry Pi:
-1.  **Create the startup script** `~/greetbot/start_greetbot.sh`:
+### 5. Setup Boot Autostart
+Make GreetBot launch in fullscreen automatically on desktop login:
+1.  **Configure execution script** `~/greetbot/start_greetbot.sh`:
     ```bash
     #!/usr/bin/env bash
-    # Disable screen blanking
     xset s off
     xset -dpms
     xset s noblank
@@ -117,31 +156,35 @@ To make GreetBot boot directly on startup on the Raspberry Pi:
     export VAD_SPEECH_THRESHOLD=1400
     export BRAIN_BACKEND="ollama"
     
-    # Delete old wav files and pycaches
     rm -f ~/greetbot/data/*.wav
     rm -rf ~/greetbot/__pycache__
 
-    # Wait for Ollama service to start up
     until curl -s http://localhost:11434/api/tags > /dev/null; do
         sleep 1
     done
 
-    # Pre-load/warm the model in memory
+    # Warm model in memory
     curl -X POST http://localhost:11434/api/generate -d '{"model": "llama3.2:3b", "keep_alive": "30m"}'
 
-    # Run the bot in venv logging output to file
+    # Run fullscreen face
     /home/robotics/venv/bin/python3 ~/greetbot/robo_head.py > ~/greetbot/data/boot.log 2>&1
     ```
-2.  Make the script executable: `chmod +x ~/greetbot/start_greetbot.sh`
-3.  **Create XDG Autostart File** `~/.config/autostart/greetbot.desktop`:
+2.  Make executable: `chmod +x ~/greetbot/start_greetbot.sh`
+3.  **Register XDG Autostart File** `~/.config/autostart/greetbot.desktop`:
     ```text
     [Desktop Entry]
     Type=Application
     Name=GreetBot
     Exec=/home/robotics/greetbot/start_greetbot.sh
     ```
+</details>
 
 ---
 
-## Customizing Facts (`knowledge_base.json`)
-You can edit the `knowledge_base.json` next to `brain.py` at any time. Changes to college officials, placement stats, and club descriptions are reloaded **dynamically** in real time without restarting the GreetBot script or API server.
+## ⚡ Pi 5 Performance Tuning Checklist
+
+*   [ ] Run `pi_optimizer.sh` to lock the CPU frequency governor to `performance`.
+*   [ ] Use `tiny.en` for speech-to-text to keep transcription times under 0.6 seconds.
+*   [ ] Ensure `keep_alive` is set to `"30m"` during the warmup curl request.
+*   [ ] Boot the Pi from an SSD rather than a MicroSD card to prevent storage latency.
+*   [ ] Swapped temporary WAV paths to `/dev/shm` (RAM disk) to bypass storage write cycles.
