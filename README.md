@@ -1,5 +1,10 @@
 # GreetBot 🤖
 
+<p align="center">
+  <img src="images/greetbot_hardware.jpg" width="45%" alt="GreetBot Hardware Render" />
+  <img src="images/greetbot_visor.jpg" width="45%" alt="GreetBot EVE Visor Screen" />
+</p>
+
 An interactive, hands-free companion robot featuring a glowing **EVE-style (Wall-E) animated LED anime face** rendered in Pygame, voice activity detection (VAD), local faster-whisper speech-to-text, and a dual-backend reasoning brain (Groq Cloud / Local Ollama).
 
 ---
