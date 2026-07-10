@@ -6,25 +6,30 @@ An interactive, hands-free companion robot featuring a glowing **EVE-style (Wall
 
 ## Key Features
 
-*   **EVE-Style LED Anime Visor**: Dynamic $800 \times 480$ Pygame interface displaying glowing cyan LED capsule eyes that animate based on 5 emotion states (`NEUTRAL`, `HAPPY`, `SAD`, `SURPRISED`, `THINKING`) with scanlines and randomized natural blinking.
-*   **VAD-Based Audio Capture**: Energy-based Voice Activity Detection dynamically records natural speech and pauses rather than relying on fixed-length buffers.
+*   **EVE-Style LED Anime Visor**: Dynamic Pygame interface displaying glowing cyan LED capsule eyes that animate based on 5 emotion states (`NEUTRAL`, `HAPPY`, `SAD`, `SURPRISED`, `THINKING`) with scanlines and randomized natural blinking.
+*   **Resolution-Agnostic Scaling**: Draws to a virtual $800 \times 480$ canvas and dynamically scales up (`pygame.transform.smoothscale`) to fit any physical screen size. Supports **F11** to toggle fullscreen and **ESC** to exit cleanly.
+*   **VAD-Based Audio Capture**: Energy-based Voice Activity Detection dynamically records natural speech and pauses. The default noise threshold is tuned to **1400** (optimized for room ambient noise floors of 700-1000 RMS) to prevent infinite recording loops.
+*   **Persistent User Memory**: Automatically saves a user's name and facts to `memory.json`. 
+    *   *Direct shortcuts*: Instant saving/retrieval for phrases like "my name is X", "what's my name", and "forget everything".
+    *   *LLM context injection*: Stored facts are automatically folded into the LLM system prompt context, allowing the bot to organically remember details when asked natural questions.
 *   **Three-Tier Reasoning Engine**:
-    1.  *Instant Python Shortcuts*: For real-time, non-hallucinatory information (date, time, day, bot identity).
-    2.  *Keyword KB Lookup*: Querying `knowledge_base.json` for deterministic factual answers (college details, personnel bios, placement figures).
-    3.  *LLM Fallback*: Using cloud API (Groq) or local 3B model (Ollama) for general chat.
-*   **Raspberry Pi 5 Optimization**: Out-of-the-box configurations for sub-5 second local processing on the Pi, including RAM-disk directories for temporary audio, thread locks, context window limits, and a system governor script.
-*   **Global REST API**: FastAPI server exposing queries via `POST /ask`.
+    1.  *Instant Python Shortcuts*: Real-time responses for date, time, day, bot identity, and memory commands.
+    2.  *Keyword KB Lookup*: Querying `knowledge_base.json` for factual data (college details, personnel, placement figures).
+    3.  *LLM Fallback*: Using Groq Cloud or a local 3B model (Ollama) for conversational replies.
+*   **Autostart & Pre-Warm Boot**: Boots automatically on Pi startup, pre-warms the Ollama model to RAM via a warmup call, sets screen control, and runs headless logging.
 
 ---
 
 ## File Structure
 
-*   `brain.py`: Shared reasoning module. The single source of truth for bot logic and KB lookups.
-*   `robo_head_mac.py`: macOS entry point utilizing CoreAudio (`sounddevice` streams) and macOS `say` fallbacks.
-*   `robo_head.py`: Raspberry Pi entry point utilizing PipeWire (`pw-record` and `paplay` playback) and memory-disk storage (`/dev/shm`).
-*   `pi_optimizer.sh`: Hardware and scheduling prioritization optimizer for Raspberry Pi.
-*   `api_server.py`: FastAPI server for remote/global API queries.
+*   `brain.py`: Shared reasoning module. Contains direct shortcuts, KB matching, memory handling, and backend dispatch.
+*   `robo_head_mac.py`: macOS entry point using CoreAudio (`sounddevice` streams) and macOS `say` fallbacks.
+*   `robo_head.py`: Raspberry Pi entry point using PipeWire (`pw-record` streams, `paplay` output) and `/dev/shm/` RAM disk.
 *   `knowledge_base.json`: Local factual database (college details, club info, placement stats).
+*   `memory.json`: Local persistent user database (name, facts).
+*   `pi_optimizer.sh`: Hardware and scheduling prioritization optimizer for Raspberry Pi.
+*   `start_greetbot.sh`: Autostart script that disables screen-blanking, warms Ollama, and launches the python loop.
+*   `api_server.py`: FastAPI server for remote/global API queries.
 
 ---
 
@@ -37,7 +42,7 @@ GreetBot is configured using environment variables:
 | `BRAIN_BACKEND` | LLM backend to run (`groq` or `ollama`) | `groq` | `ollama` |
 | `GROQ_API_KEY` | Your Groq Cloud API Key | *None* | *N/A* |
 | `WHISPER_MODEL` | Size of Whisper model for STT (`tiny.en` / `base.en`) | `base.en` | `tiny.en` |
-| `VAD_SPEECH_THRESHOLD` | Sensitivity of Voice Activity Detection | `350` | `350` |
+| `VAD_SPEECH_THRESHOLD` | Sensitivity threshold of VAD | `350` | `1400` |
 
 ---
 
@@ -61,27 +66,73 @@ GreetBot is configured using environment variables:
 
 ### 🍓 Raspberry Pi 5 (Local Model Target)
 
-1.  **Install dependencies**:
+#### 1. System Dependencies Setup
+```bash
+sudo apt update
+sudo apt install pipewire-utils espeak unclutter-xfixes
+python3 -m venv venv
+source venv/bin/activate
+pip install numpy pygame requests faster-whisper
+```
+
+#### 2. Run local Ollama in Docker & Pull the 3B model
+```bash
+docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
+docker exec -it ollama ollama run llama3.2:3b
+```
+
+#### 3. Mic Routing (PipeWire)
+Since the Pi's audio devices can shift between reboots:
+1.  Find the source ID of your microphone and sink ID of your speaker:
     ```bash
-    sudo apt update
-    sudo apt install pipewire-utils espeak
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install numpy pygame requests faster-whisper
+    wpctl status
     ```
-2.  **Run Ollama in Docker**:
+2.  Manually set your default mic and speaker:
     ```bash
-    docker run -d -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama
-    docker exec -it ollama ollama run llama3.2:3b
+    wpctl set-default <mic_source_id>
+    wpctl set-default <speaker_sink_id>
     ```
-3.  **Optimize the System**:
+
+#### 4. Run System Performance Optimizer
+```bash
+sudo ./pi_optimizer.sh
+```
+
+#### 5. Autostart Setup (XDG Desktop Entry)
+To make GreetBot boot directly on startup on the Raspberry Pi:
+1.  **Create the startup script** `~/greetbot/start_greetbot.sh`:
     ```bash
-    sudo ./pi_optimizer.sh
-    ```
-4.  **Run GreetBot**:
-    ```bash
+    #!/usr/bin/env bash
+    # Disable screen blanking
+    xset s off
+    xset -dpms
+    xset s noblank
+
+    export VAD_SPEECH_THRESHOLD=1400
     export BRAIN_BACKEND="ollama"
-    python3 robo_head.py
+    
+    # Delete old wav files and pycaches
+    rm -f ~/greetbot/data/*.wav
+    rm -rf ~/greetbot/__pycache__
+
+    # Wait for Ollama service to start up
+    until curl -s http://localhost:11434/api/tags > /dev/null; do
+        sleep 1
+    done
+
+    # Pre-load/warm the model in memory
+    curl -X POST http://localhost:11434/api/generate -d '{"model": "llama3.2:3b", "keep_alive": "30m"}'
+
+    # Run the bot in venv logging output to file
+    /home/robotics/venv/bin/python3 ~/greetbot/robo_head.py > ~/greetbot/data/boot.log 2>&1
+    ```
+2.  Make the script executable: `chmod +x ~/greetbot/start_greetbot.sh`
+3.  **Create XDG Autostart File** `~/.config/autostart/greetbot.desktop`:
+    ```text
+    [Desktop Entry]
+    Type=Application
+    Name=GreetBot
+    Exec=/home/robotics/greetbot/start_greetbot.sh
     ```
 
 ---
